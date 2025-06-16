@@ -23,20 +23,22 @@ conda create -n monocd python=3.10 -y
 conda activate monocd
 
 # Install PyTorch that matches your local CUDA version. We adopt torch 1.4.0+cu101
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
-conda install cudatoolkit ninja
+pip install torch==1.13 torchvision torchaudio --index-url https://download.pytorch.org/whl/cu117
+
+# conda install cudatoolkit ninja
+
 # Maybe comment out Inplace-ABN and make necessary 'if' block changes to remove it from files.
 pip install -r requirements.txt
 
 # Change this as well, make necessary changes.
-#cd model/backbone/DCNv2
-#sh make.sh
+# cd model/backbone/DCNv2
+# sh make.sh
 # If the DCNv2 compilation fails, you can replace it with the version from https://github.com/lbin/DCNv2 that matches your PyTorch version, and then try recompiling.
+# DCNv2 is too old for your hardware architecture
+pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/cu117/torch1.13/index.html
+pip install cmake==3.26.1 pillow==8.3.2
 
 cd ../../..
-# Add a pyproject.toml file as well.
-<add pyproject.toml>
-<edit the requirements.txt file>
 python setup.py develop
 
 ```
