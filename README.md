@@ -28,14 +28,17 @@ conda install cudatoolkit ninja
 # Maybe comment out Inplace-ABN and make necessary 'if' block changes to remove it from files.
 pip install -r requirements.txt
 
-cd model/backbone/DCNv2
-sh make.sh
+# Change this as well, make necessary changes.
+#cd model/backbone/DCNv2
+#sh make.sh
 # If the DCNv2 compilation fails, you can replace it with the version from https://github.com/lbin/DCNv2 that matches your PyTorch version, and then try recompiling.
-Change this as well, make necessary changes.
 
 cd ../../..
 # Add a pyproject.toml file as well.
+<add pyproject.toml>
+<edit the requirements.txt file>
 python setup.py develop
+
 ```
 
 ## Data Preparation
