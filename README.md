@@ -23,7 +23,7 @@ conda create -n monocd python=3.10 -y
 conda activate monocd
 
 # Install PyTorch that matches your local CUDA version. We adopt torch 1.4.0+cu101
-pip install torch==1.13 torchvision torchaudio --index-url https://download.pytorch.org/whl/cu117
+pip install torch==1.13 torchvision==0.14 --index-url https://download.pytorch.org/whl/cu117
 
 # conda install cudatoolkit ninja
 
