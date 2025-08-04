@@ -159,7 +159,11 @@ class Loss_Computation():
 
 		# the corresponding image_index for each object, used for finding pad_size, calib and so on
 		batch_idxs = torch.arange(batch).view(-1, 1).expand_as(reg_mask_gt).reshape(-1)
-		batch_idxs = batch_idxs[flatten_reg_mask_gt].to(reg_mask_gt.device) 
+		# batch_idxs = batch_idxs[flatten_reg_mask_gt].to(reg_mask_gt.device)
+		####### NEW CHANGE ##############
+		batch_idxs = batch_idxs.to(flatten_reg_mask_gt.device)
+		batch_idxs = batch_idxs[flatten_reg_mask_gt]
+		batch_idxs = batch_idxs.to(reg_mask_gt.device) 
 
 		valid_targets_bbox_points = targets_bbox_points.view(-1, 2)[flatten_reg_mask_gt]
 
@@ -458,11 +462,11 @@ class Loss_Computation():
 							preds['depth_uncertainty'] * self.loss_weights['depth_loss']
 				
 				depth_3D_loss = depth_3D_loss.mean()
-				depth_MAE = (preds['depth_3D'] - pred_targets['depth_3D']).abs() / pred_targets['depth_3D']
+				depth_MAE = (preds['depth_3D'] - pred_targets['depth_3D']).abs() / (pred_targets['depth_3D'] + self.eps)
 
 			# offset_3D loss
-			offset_3D_loss = self.reg_loss_fnc(preds['offset_3D'], pred_targets['offset_3D'], reduction='none').sum(dim=1)
-
+			offset_3D_loss = self.reg_loss_fnc(preds['offset_3D'].cpu(), pred_targets['offset_3D'].cpu(), reduction='none').sum(dim=1)
+			offset_3D_loss = offset_3D_loss.to(trunc_mask.device)
 			# use different loss functions for inside and outside objects
 			if self.separate_trunc_offset:
 				if self.trunc_offset_loss_type == 'L1':
@@ -495,7 +499,7 @@ class Loss_Computation():
 
 			with torch.no_grad():
 				try:
-					pred_IoU_3D = get_iou_3d(preds['corners_3D'], pred_targets['corners_3D']).mean()
+					pred_IoU_3D = get_iou_3d(preds['corners_3D'].cpu(), pred_targets['corners_3D'].cpu()).mean()
 				except:
 					pred_IoU_3D = torch.tensor([0.0]).type_as(preds['corners_3D'])
 
@@ -531,8 +535,8 @@ class Loss_Computation():
 
 				compensated_depth_loss = valid_compensated_depth_loss + invalid_compensated_depth_loss
 
-				compensated_depth_MAE = (preds['compensated_depths'] - pred_targets['depth_3D'].unsqueeze(-1)).abs() / pred_targets[
-					'depth_3D'].unsqueeze(-1)
+				compensated_depth_MAE = (preds['compensated_depths'] - pred_targets['depth_3D'].unsqueeze(-1)).abs() / (pred_targets[
+					'depth_3D'].unsqueeze(-1)  + self.eps)
 
 				comp_cen_MAE = compensated_depth_MAE[:, 0].mean()
 				comp_02_MAE = compensated_depth_MAE[:, 1].mean()
@@ -544,7 +548,7 @@ class Loss_Computation():
 				keypoint_loss = self.loss_weights['keypoint_loss'] * self.keypoint_loss_fnc(preds['keypoints'],
 								pred_targets['keypoints'], reduction='none').sum(dim=2) * pred_targets['keypoints_mask']
 				
-				keypoint_loss = keypoint_loss.sum() / torch.clamp(pred_targets['keypoints_mask'].sum(), min=1)
+				keypoint_loss = keypoint_loss.sum() / (torch.clamp(pred_targets['keypoints_mask'].sum(), min=1) + self.eps)
 
 				if self.compute_keypoint_depth_loss:
 					pred_keypoints_depth, keypoints_depth_mask = preds['keypoints_depths'], pred_targets['keypoints_depth_mask'].bool()
@@ -587,7 +591,7 @@ class Loss_Computation():
 
 					# compute the average error for each method of depth estimation
 					keypoint_MAE = (preds['keypoints_depths'] - pred_targets['depth_3D'].unsqueeze(-1)).abs() \
-								   / pred_targets['depth_3D'].unsqueeze(-1)
+								   / (pred_targets['depth_3D'].unsqueeze(-1)  + self.eps)
 
 					center_MAE = keypoint_MAE[:, 0].mean()
 					keypoint_02_MAE = keypoint_MAE[:, 1].mean()
@@ -619,7 +623,7 @@ class Loss_Computation():
 						soft_depth_loss = self.loss_weights['weighted_avg_depth_loss'] * \
 										  self.reg_loss_fnc(soft_depths, pred_targets['depth_3D'], reduction='mean')
 
-					soft_MAE = ((soft_depths - pred_targets['depth_3D']).abs() / pred_targets['depth_3D'])
+					soft_MAE = ((soft_depths - pred_targets['depth_3D']).abs() / (pred_targets['depth_3D'] + self.eps))
 					lower_MAE = torch.min(combined_MAE, dim=1)[0]
 					hard_MAE = combined_MAE[torch.arange(combined_MAE.shape[0]), combined_uncertainty.argmin(dim=1)]
 					lower_MAE, hard_MAE, soft_MAE = lower_MAE.mean(), hard_MAE.mean(), soft_MAE.mean()
@@ -693,8 +697,10 @@ class Loss_Computation():
 
 		# loss_dict ===> log_loss_dict
 		for key, value in loss_dict.items():
-			if key not in log_loss_dict:
-				log_loss_dict[key] = value.item()
+			if not torch.isfinite(value).all():
+				print(f"⚠️ NaN/Inf detected in loss: {key}, value: {value}")
+				import pdb; pdb.set_trace()
+			log_loss_dict[key] = value.item()
 
 		# stop when the loss has NaN or Inf
 		for v in loss_dict.values():

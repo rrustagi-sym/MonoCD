@@ -251,18 +251,23 @@ class PostProcessor(nn.Module):
 					ideal_y3d = torch.ones(pred_bbox_points.shape[0], device='cuda:0') * 1.65
 					EL = ideal_y3d
 				else:
-					target_center = target_varibales['target_centers'].float()
-					reg_mask = target_varibales['reg_mask'].view(-1).bool()
-					target_center = target_center[0][reg_mask]
-					target_EL = target_varibales['EL'].view(-1)[reg_mask]
-					if len(target_center) == 0:
-						EL = torch.ones(pred_bbox_points.shape[0], device='cuda:0') * 1.65
+					# Check if target_centers exists (only available during training)
+					if 'target_centers' in target_varibales:
+						target_center = target_varibales['target_centers'].float()
+						reg_mask = target_varibales['reg_mask'].view(-1).bool()
+						target_center = target_center[0][reg_mask]
+						target_EL = target_varibales['EL'].view(-1)[reg_mask]
+						if len(target_center) == 0:
+							EL = torch.ones(pred_bbox_points.shape[0], device='cuda:0') * 1.65
+						else:
+							# pred_bbox_points[N, 2], target_center[M, 2]
+							# match the closest target_center for N pred_bbox_points
+							dist = torch.sqrt(torch.sum((pred_bbox_points[:, None] - target_center) ** 2, axis=-1))
+							nearest_index = torch.argmin(dist, axis=-1)
+							EL = target_EL[nearest_index]
 					else:
-						# pred_bbox_points[N, 2], target_center[M, 2]
-						# match the closest target_center for N pred_bbox_points
-						dist = torch.sqrt(torch.sum((pred_bbox_points[:, None] - target_center) ** 2, axis=-1))
-						nearest_index = torch.argmin(dist, axis=-1)
-						EL = target_EL[nearest_index]
+						# During testing, use ideal y3d when target centers are not available
+						EL = torch.ones(pred_bbox_points.shape[0], device='cuda:0') * 1.65
 				pred_compensated_depths = self.anno_encoder.decode_depth_from_roof_and_bottom(EL, pred_bbox_points, pred_keypoint_offset, pred_dimensions, calib, pad_size, None)
 
 			pred_compensated_depths_uncertainty = pred_regression_pois[:, self.key2channel('compensated_depth_uncertainty')].exp()

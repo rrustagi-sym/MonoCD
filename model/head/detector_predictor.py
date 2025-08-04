@@ -12,9 +12,9 @@ from model import registry
 from model.layers.utils import sigmoid_hm
 from model.make_layers import group_norm, _fill_fc_weights
 from model.layers.utils import select_point_of_interest
-from model.backbone.DCNv2.dcn_v2 import DCNv2
+# from model.backbone.DCNv2.dcn_v2 import DCNv2
 
-from inplace_abn import InPlaceABN
+# from inplace_abn import InPlaceABN
 
 @registry.PREDICTOR.register("Base_Predictor")
 class _predictor(nn.Module):
@@ -50,7 +50,7 @@ class _predictor(nn.Module):
         if self.use_inplace_abn:
             self.class_head = nn.Sequential(
                 nn.Conv2d(in_channels, self.head_conv, kernel_size=3, padding=1, bias=False),
-                InPlaceABN(self.head_conv, momentum=self.bn_momentum, activation=self.abn_activision),
+                # InPlaceABN(self.head_conv, momentum=self.bn_momentum, activation=self.abn_activision),
                 nn.Conv2d(self.head_conv, classes, kernel_size=1, padding=1 // 2, bias=True),
             )
         else:
@@ -71,7 +71,7 @@ class _predictor(nn.Module):
             if self.use_inplace_abn:
                 self.horizon_head = nn.Sequential(
                     nn.Conv2d(in_channels, self.head_conv, kernel_size=3, padding=1, bias=False),
-                    InPlaceABN(self.head_conv, momentum=self.bn_momentum, activation=self.abn_activision),
+                    # InPlaceABN(self.head_conv, momentum=self.bn_momentum, activation=self.abn_activision),
                     nn.Conv2d(self.head_conv, 1, kernel_size=1, padding=1 // 2, bias=True),
                 )
             else:
@@ -97,8 +97,11 @@ class _predictor(nn.Module):
                 feat_layer = nn.Sequential()
             else:
                 if self.use_inplace_abn:
+                    i=1
+                    # feat_layer = nn.Sequential(nn.Conv2d(in_channels, self.head_conv, kernel_size=3, padding=1, bias=False),
+                    #                     InPlaceABN(self.head_conv, momentum=self.bn_momentum, activation=self.abn_activision))
                     feat_layer = nn.Sequential(nn.Conv2d(in_channels, self.head_conv, kernel_size=3, padding=1, bias=False),
-                                        InPlaceABN(self.head_conv, momentum=self.bn_momentum, activation=self.abn_activision))
+                                        norm_func(self.head_conv, momentum=self.bn_momentum), nn.ReLU(inplace=True))
                 else:
                     feat_layer = nn.Sequential(nn.Conv2d(in_channels, self.head_conv, kernel_size=3, padding=1, bias=False),
                                         norm_func(self.head_conv, momentum=self.bn_momentum), nn.ReLU(inplace=True))
@@ -169,6 +172,12 @@ class _predictor(nn.Module):
 
             for j, reg_output_head in enumerate(self.reg_heads[i]):
                 output_reg = reg_output_head(reg_feature)
+                
+                # Apply positive activation for uncertainty predictions
+                # regress_head_key = self.regression_head_cfg[i][j]
+                # if 'uncertainty' in regress_head_key:
+                #     # Use Softplus to ensure positive uncertainty values
+                #     output_reg = F.softplus(output_reg)
 
                 # apply edge feature enhancement
                 if self.enable_edge_fusion and i == self.offset_index[0] and j == self.offset_index[1]:

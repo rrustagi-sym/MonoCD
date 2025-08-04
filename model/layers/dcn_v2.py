@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+
 from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import division
@@ -115,7 +115,7 @@ class DCN(DCNv2):
         self.conv_offset_mask.weight.data.zero_()
         self.conv_offset_mask.bias.data.zero_()
 
-    def forward(self, input):
+    def forward(self, input, offset=None, mask=None):
         out = self.conv_offset_mask(input)
         o1, o2, mask = torch.chunk(out, 3, dim=1)
         offset = torch.cat((o1, o2), dim=1)
@@ -204,7 +204,7 @@ class DCNv2Pooling(nn.Module):
         self.sample_per_part = sample_per_part
         self.trans_std = trans_std
 
-    def forward(self, input, rois, offset):
+    def forward(self, input, rois, offset=None):
         assert input.shape[1] == self.output_dim
         if self.no_trans:
             offset = input.new()
@@ -255,7 +255,7 @@ class DCNPooling(DCNv2Pooling):
             self.offset_mask_fc[4].weight.data.zero_()
             self.offset_mask_fc[4].bias.data.zero_()
 
-    def forward(self, input, rois):
+    def forward(self, input, rois, offset=None):
         offset = input.new()
 
         if not self.no_trans:
