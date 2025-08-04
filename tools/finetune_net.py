@@ -35,7 +35,41 @@ torch.backends.cudnn.enabled = True # enable cudnn and uncertainty imported
 # torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = True # enable cudnn to search the best algorithm
 
-def train(cfg, model, device, distributed):
+def freeze_backbone(model):
+    """
+    Freeze the DLA backbone parameters to prevent them from being updated during training
+    """
+    print("Freezing DLA backbone parameters...")
+    
+    # Freeze the backbone (DLA)
+    for param in model.backbone.parameters():
+        param.requires_grad = False
+    
+    # Also freeze the DLA up and IDA up modules
+    if hasattr(model.backbone, 'dla_up'):
+        for param in model.backbone.dla_up.parameters():
+            param.requires_grad = False
+    
+    if hasattr(model.backbone, 'ida_up'):
+        for param in model.backbone.ida_up.parameters():
+            param.requires_grad = False
+    
+    # Print statistics
+    total_params = sum(p.numel() for p in model.parameters())
+    frozen_params = sum(p.numel() for p in model.parameters() if not p.requires_grad)
+    trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    
+    print(f"Total parameters: {total_params:,}")
+    print(f"Frozen parameters: {frozen_params:,}")
+    print(f"Trainable parameters: {trainable_params:,}")
+    print(f"Percentage trainable: {100 * trainable_params / total_params:.2f}%")
+    
+    return model
+
+def finetune(cfg, model, device, distributed):
+    """
+    Finetuning function that freezes the backbone and only trains the detection heads
+    """
     data_loader = make_data_loader(cfg, is_train=True)
     data_loaders_val = build_test_loader(cfg, is_train=False)
 
@@ -50,6 +84,7 @@ def train(cfg, model, device, distributed):
     
     cfg.freeze()
 
+    # Build optimizer FIRST (like original script)
     optimizer = build_optimizer(model, cfg)
     scheduler, warmup_scheduler = build_scheduler(
         optimizer, total_iters_each_epoch=total_iters_each_epoch, 
@@ -69,6 +104,7 @@ def train(cfg, model, device, distributed):
             cfg, model, None, None, output_dir, save_to_disk
         )
 
+    # Load the pretrained model for finetuning
     if len(cfg.MODEL.WEIGHT) > 0:
         extra_checkpoint_data = checkpointer.load(cfg.MODEL.WEIGHT, use_latest=False)
         if not cfg.SOLVER.LOAD_OPTIMIZER_SCHEDULER:
@@ -76,21 +112,22 @@ def train(cfg, model, device, distributed):
             extra_checkpoint_data.pop("scheduler", None)
             extra_checkpoint_data["iteration"] = 0  # Reset iteration
         arguments.update(extra_checkpoint_data)
-    else: # If MODEL.WEIGHT is empty, attempt to load the latest from the output directory
-        try:
-            # Assuming checkpointer.load(None, use_latest=True) or checkpointer.load("", use_latest=True)
-            # will trigger the "load latest" behavior based on your DetectronCheckpointer implementation
-            extra_checkpoint_data = checkpointer.load(None, use_latest=True) # Pass None or an empty string as path
-            if extra_checkpoint_data: # Only update if a checkpoint was actually found and loaded
-                arguments.update(extra_checkpoint_data)
-                print(f"Resuming from latest checkpoint in {output_dir}")
-            else:
-                print("No latest checkpoint found. Starting from scratch.")
-        except Exception as e:
-            print(f"Error loading latest checkpoint: {e}. Starting from scratch.")
-            # Ensure arguments['iteration'] remains 0 if no checkpoint is loaded
-            if "iteration" not in arguments:
-                arguments["iteration"] = 0
+        print(f"Loaded pretrained model from {cfg.MODEL.WEIGHT}")
+    else:
+        print("Warning: No pretrained model specified. Please set MODEL.WEIGHT in config.")
+        if "iteration" not in arguments:
+            arguments["iteration"] = 0
+
+    # Freeze the backbone AFTER loading the pretrained weights
+    model = freeze_backbone(model)
+    
+    # Adjust learning rates for finetuning (backbone should be 0, heads can be higher)
+    for param_group in optimizer.param_groups:
+        if 'backbone' in param_group.get('name', ''):
+            param_group['lr'] = 0.0  # Ensure backbone learning rate is 0
+        else:
+            # Optionally increase learning rate for heads during finetuning
+            param_group['lr'] = param_group['lr'] * 2.0  # 2x learning rate for heads
 
     do_train(
         cfg,
@@ -137,7 +174,8 @@ def main(args):
     cfg = setup(args)
 
     distributed = comm.get_world_size() > 1
-    if not distributed: cfg.MODEL.USE_SYNC_BN = False
+    if not distributed: 
+        cfg.MODEL.USE_SYNC_BN = False
 
     model = KeypointDetector(cfg)
     device = torch.device(cfg.MODEL.DEVICE)
@@ -162,12 +200,15 @@ def main(args):
             find_unused_parameters=True,
         )
 
-    train(cfg, model, device, distributed)
+    finetune(cfg, model, device, distributed)
 
 if __name__ == '__main__':
     args = default_argument_parser().parse_args()
     
     print("Command Line Args:", args)
+    print("=" * 50)
+    print("FINETUNING MODE: Backbone will be frozen")
+    print("=" * 50)
 
     # backup all python files when training
     if not args.eval_only and args.output is not None:
@@ -184,4 +225,4 @@ if __name__ == '__main__':
         machine_rank=args.machine_rank,
         dist_url=args.dist_url,
         args=(args,),
-    )
+    ) 
