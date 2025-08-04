@@ -359,7 +359,7 @@ class KITTIDataset(Dataset):
 		# generate pixels on a horizontal line
 		u = np.arange(0, horizon_heat_map.shape[2])
 		v = K * u + B
-		v = np.round(v).astype(np.int)
+		v = np.round(v).astype(int)
 		for center in zip(u, v):
 			horizon_heat_map[0] = draw_umich_gaussian(horizon_heat_map[0], center, radius)
 
@@ -631,9 +631,9 @@ class KITTIDataset(Dataset):
 
 			# target_center: the point to represent the object in the downsampled feature map
 			if self.heatmap_center == '2D':
-				target_center = bbox_center.round().astype(np.int)
+				target_center = bbox_center.round().astype(int)
 			else:
-				target_center = target_proj_center.round().astype(np.int)
+				target_center = target_proj_center.round().astype(int)
 
 			# clip to the boundary
 			target_center[0] = np.clip(target_center[0], x_min, x_max)
