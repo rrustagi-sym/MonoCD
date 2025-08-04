@@ -19,19 +19,28 @@ This repository includes an official implementation of the paper [MonoCD: Monocu
 git clone https://github.com/dragonfly606/MonoCD.git
 cd MonoCD
 
-conda create -n monocd python=3.7
+conda create -n monocd python=3.10 -y
 conda activate monocd
 
 # Install PyTorch that matches your local CUDA version. We adopt torch 1.4.0+cu101
-conda install pytorch torchvision cudatoolkit
+pip install torch==1.13 torchvision==0.14 --index-url https://download.pytorch.org/whl/cu117
+
+# conda install cudatoolkit ninja
+
+# Maybe comment out Inplace-ABN and make necessary 'if' block changes to remove it from files.
 pip install -r requirements.txt
 
-cd model/backbone/DCNv2
-sh make.sh
+# Change this as well, make necessary changes.
+# cd model/backbone/DCNv2
+# sh make.sh
 # If the DCNv2 compilation fails, you can replace it with the version from https://github.com/lbin/DCNv2 that matches your PyTorch version, and then try recompiling.
+# DCNv2 is too old for your hardware architecture
+pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/cu117/torch1.13/index.html
+pip install cmake==3.26.1 pillow==8.3.2
 
 cd ../../..
 python setup.py develop
+
 ```
 
 ## Data Preparation
@@ -103,9 +112,3 @@ This project benefits from awesome works of [MonoFlex](https://github.com/zhangy
 ## Contact
 
 If you have any questions about this project, please feel free to contact longfeiyan@hust.edu.cn.
-
-### NOTE CHANGES:
-Summary of Changes Made in `monocd.yaml` for removing use_groundplane_pred:
-- Disabled ground plane prediction: PRED_GROUND_PLANE: False
-- Removed horizon heatmap loss: Commented out horizon_hm_loss from LOSS_NAMES
-- Updated loss weights: Removed corresponding weight from INIT_LOSS_WEIGHT
