@@ -1,4 +1,4 @@
-from .defaults import _C as cfg
+from .defaults_symkitti import _C as cfg
 
 TYPE_ID_CONVERSION = {
     'Car': 0,

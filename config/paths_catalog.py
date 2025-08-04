@@ -1,13 +1,22 @@
 import os
 
 class DatasetCatalog():
-    DATA_DIR = "/path/to/your/kitti/"
+    # DATA_DIR = "/home/rrustagi_symbotic_com/MonoCD/data/datasets/"
+    DATA_DIR = "/home/rrustagi_symbotic_com/symkitti_500"
     DATASETS = {
-        "kitti_train": {
-            "root": "KITTI/training/",
+        # "kitti_train": {
+        #     # "root": "KITTI/training/",
+        #     "root": "training/",
+        # },
+        # "kitti_test": {
+        #     # "root": "KITTI/testing/",
+        #     "root": "testing/",
+        # },
+        "symkitti_train": {
+            "root": "training/",
         },
-        "kitti_test": {
-            "root": "KITTI/testing/",
+        "symkitti_test": {
+            "root": "testing/",
         },
     }
 

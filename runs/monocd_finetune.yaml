@@ -1,11 +1,9 @@
 DATASETS:
   DETECT_CLASSES: ("Car",)
-  # TRAIN: ("kitti_train",)
-  # TEST: ("kitti_train",)
   TRAIN: ("symkitti_train",)
   TEST: ("symkitti_test",)
   TRAIN_SPLIT: "train"
-  TEST_SPLIT: "val"
+  TEST_SPLIT: "test"
   MAX_OBJECTS: 40
 
   USE_RIGHT_IMAGE: False
@@ -75,7 +73,6 @@ MODEL:
                  'trunc_offset_loss',
                  'weighted_avg_depth_loss',
                  'compensated_depth_loss',
-                 # 'horizon_hm_loss',  # Disabled since PRED_GROUND_PLANE is False
     ]
     LOSS_UNCERTAINTY: [True, True, False, True, True, True, True, True, False, True, True]
     INIT_LOSS_WEIGHT: [1,
@@ -90,7 +87,6 @@ MODEL:
                        0.1,
                        0.2,
                        0.1,
-                       # 1,  # Removed weight for horizon_hm_loss
     ]
 
     CENTER_MODE: 'max'
@@ -106,7 +102,6 @@ MODEL:
 
     PRED_DIRECT_DEPTH: True
 
-    # PRED_GROUND_PLANE: True
     PRED_GROUND_PLANE: False
     HORIZON_GAUSSIAN_RADIUS: 2
     WEIGHTINCREASED: True
@@ -120,10 +115,10 @@ MODEL:
 
 SOLVER:
   OPTIMIZER: 'adamw'
-  BASE_LR: 3e-4
+  BASE_LR: 6e-4  # Higher learning rate for finetuning (2x the original)
   WEIGHT_DECAY: 1e-5
   LR_WARMUP: False
-  WARMUP_STEPS: 2000
+  WARMUP_STEPS: 1000  # Reduced warmup since we're finetuning
 
   # for 1 GPU
   LR_DECAY: 0.1
@@ -131,16 +126,16 @@ SOLVER:
   EVAL_AND_SAVE_EPOCH: True
   EVAL_EPOCH_INTERVAL: 1
   SAVE_CHECKPOINT_EPOCH_INTERVAL: 1
-  MAX_EPOCHS: 100
-  DECAY_EPOCH_STEPS: [80, 90]
+  MAX_EPOCHS: 50  # Reduced epochs for finetuning
+  DECAY_EPOCH_STEPS: [30, 40]  # Adjusted for shorter training
 
   IMS_PER_BATCH: 8
-  EVAL_INTERVAL: 1000
+  EVAL_INTERVAL: 500  # More frequent evaluation
 
 TEST:
   UNCERTAINTY_AS_CONFIDENCE: True
   DETECTIONS_THRESHOLD: 0.2
   METRIC: ['R40']
 
-OUTPUT_DIR: "./output"
-SEED: 107801
+OUTPUT_DIR: "./output_finetune"
+SEED: 107801 

@@ -1,12 +1,10 @@
 DATASETS:
-  DETECT_CLASSES: ("Car",)
-  # TRAIN: ("kitti_train",)
-  # TEST: ("kitti_train",)
+  DETECT_CLASSES: ("Car", )
   TRAIN: ("symkitti_train",)
   TEST: ("symkitti_test",)
   TRAIN_SPLIT: "train"
-  TEST_SPLIT: "val"
-  MAX_OBJECTS: 40
+  TEST_SPLIT: "test"
+  MAX_OBJECTS: 5
 
   USE_RIGHT_IMAGE: False
   CONSIDER_OUTSIDE_OBJS: True
@@ -23,7 +21,7 @@ INPUT:
   ORIENTATION_BIN_SIZE: 4
 
   APPROX_3D_CENTER: 'intersect'
-  ADJUST_BOUNDARY_HEATMAP: True
+  ADJUST_BOUNDARY_HEATMAP: False
   KEYPOINT_VISIBLE_MODIFY: True
 
 MODEL:

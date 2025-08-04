@@ -8,7 +8,7 @@ from yacs.config import CfgNode as CN
 _C = CN()
 _C.MODEL = CN()
 _C.MODEL.DEVICE = "cuda"
-# _C.MODEL.WEIGHT = "/home/rrustagi_symbotic_com/MonoCD/output_finetuning/monocd_kitti_pretrained.pth"
+# _C.MODEL.WEIGHT = "/home/rrustagi_symbotic_com/MonoCD/output_kitti/exp/model_final.pth"
 _C.MODEL.WEIGHT = ""
 _C.MODEL.PRETRAIN = True
 _C.MODEL.USE_SYNC_BN = False
@@ -32,9 +32,9 @@ _C.INPUT.HEIGHT_TEST = 384
 _C.INPUT.WIDTH_TEST = 1280
 
 # Values to be used for image normalization
-_C.INPUT.PIXEL_MEAN = [0.485, 0.456, 0.406]  # kitti
+_C.INPUT.PIXEL_MEAN = [0.33187854518754256, 0.35868420146334673, 0.2676734146653005]  # kitti
 # Values to be used for image normalization
-_C.INPUT.PIXEL_STD = [0.229, 0.224, 0.225]  # kitti
+_C.INPUT.PIXEL_STD = [0.2366390778911041, 0.22152534236914742, 0.21237010404133466]  # kitti
 # Convert image to BGR format
 _C.INPUT.TO_BGR = False
 _C.INPUT.MODIFY_ALPHA = False
@@ -64,9 +64,9 @@ _C.INPUT.AUG_PARAMS = [[0.5]]
 # -----------------------------------------------------------------------------
 _C.DATASETS = CN()
 # List of the dataset names for training, as present in paths_catalog.py
-_C.DATASETS.TRAIN = ()
+_C.DATASETS.TRAIN = ('symkitti_train',)
 # List of the dataset names for testing, as present in paths_catalog.py
-_C.DATASETS.TEST = ()
+_C.DATASETS.TEST = ('symkitti_test',)
 # train split tor dataset
 _C.DATASETS.TRAIN_SPLIT = ""
 # test split for dataset
@@ -80,7 +80,7 @@ _C.DATASETS.FILTER_ANNOS = [0.9, 20]
 _C.DATASETS.USE_RIGHT_IMAGE = False
 _C.DATASETS.CONSIDER_OUTSIDE_OBJS = False
 
-_C.DATASETS.MAX_OBJECTS = 40
+_C.DATASETS.MAX_OBJECTS = 5
 
 _C.DATASETS.MIN_RADIUS = 0.0
 _C.DATASETS.MAX_RADIUS = 0.0
@@ -174,8 +174,8 @@ _C.MODEL.HEAD.DEPTH_FROM_KEYPOINT = False
 _C.MODEL.HEAD.KEYPOINT_TO_DEPTH_RELU = True
 
 _C.MODEL.HEAD.DEPTH_MODE = 'exp' # or linear
-_C.MODEL.HEAD.DEPTH_RANGE = [0.1, 100]
-_C.MODEL.HEAD.DEPTH_REFERENCE = (26.494627, 16.05988)
+_C.MODEL.HEAD.DEPTH_RANGE = [0.1, 15]
+_C.MODEL.HEAD.DEPTH_REFERENCE = (4.8866, 2.9385)
 
 _C.MODEL.HEAD.SUPERVISE_CORNER_DEPTH = False
 _C.MODEL.HEAD.REGRESSION_OFFSET_STAT = [-0.5844396972302358, 9.075032501413093]
@@ -212,19 +212,15 @@ _C.MODEL.HEAD.PRED_MULTI_Y3D = False
 _C.MODEL.HEAD.TRAIN_Y3D_KPTS_FROM_GT = False
 
 # Reference car size in (length, height, width)
-# for (car, pedestrian, cyclist)
-_C.MODEL.HEAD.DIMENSION_MEAN = ((3.8840, 1.5261, 1.6286),
-                               (0.8423, 1.7607, 0.6602),
-                               (1.7635, 1.7372, 0.5968))
+# for (car)
+_C.MODEL.HEAD.DIMENSION_MEAN = ((1.72, 0.78, 0.74), (1.72, 0.78, 0.74), (1.72, 0.78, 0.74))
 
 # since only car and pedestrian have enough samples and are evaluated in KITTI server 
-_C.MODEL.HEAD.DIMENSION_STD = ((0.4259, 0.1367, 0.1022),
-								(0.2349, 0.1133, 0.1427),
-								(0.1766, 0.0948, 0.1242))
+_C.MODEL.HEAD.DIMENSION_STD = ((0.01, 0.01, 0.01), (0.01, 0.01, 0.01), (0.01, 0.01, 0.01))
 
-# for (car, pedestrian, cyclist)
-_C.MODEL.HEAD.Y_MEAN = (1.7098, 1.4340, 1.5699)
-_C.MODEL.HEAD.Y_STD = (0.3857, 0.2925, 0.4222)
+# for (car)
+_C.MODEL.HEAD.Y_MEAN = (-0.4435, -0.4435, -0.4435)
+_C.MODEL.HEAD.Y_STD = (0.4987, 0.4987, 0.4987)
 
 # linear or log ; use mean or not ; use std or not
 _C.MODEL.HEAD.DIMENSION_REG = ['linear', True, False]
@@ -306,7 +302,7 @@ _C.SOLVER.GRAD_ALPHA = 0.9
 _C.SOLVER.BIAS_LR_FACTOR = 2.0 # bias lr
 _C.SOLVER.BACKBONE_LR_FACTOR = 1.0
 
-_C.SOLVER.LOAD_OPTIMIZER_SCHEDULER = True
+_C.SOLVER.LOAD_OPTIMIZER_SCHEDULER = False
 
 # Number of images per batch
 _C.SOLVER.IMS_PER_BATCH = 32
@@ -377,6 +373,6 @@ _C.USE_Y3D_ALONE = False
 _C.COMPUTE_DEPTH_ONLY_FROM_ROOF = False
 
 _C.USE_GROUND_PLANE = False
-_C.Y3D_RANGE = [-2.14, 4.09]
+_C.Y3D_RANGE = [-2.60, 0.50]
 _C.MODIFY_GROUND_PLANE_D = False
 _C.AGGREGATE_REG = False
