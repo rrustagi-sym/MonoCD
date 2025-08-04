@@ -1,4 +1,4 @@
-shapely
+torchshapely
 tqdm
 tensorboard
 tensorboardX
@@ -11,5 +11,10 @@ pycocotools
 fvcore
 opencv-python
 numba
-inplace_abn
 scikit-learn
+config
+
+--index-url https://download.pytorch.org/whl/cu117
+
+torch==1.13.0
+torchvision==1.14.
