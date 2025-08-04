@@ -103,3 +103,9 @@ This project benefits from awesome works of [MonoFlex](https://github.com/zhangy
 ## Contact
 
 If you have any questions about this project, please feel free to contact longfeiyan@hust.edu.cn.
+
+### NOTE CHANGES:
+Summary of Changes Made in `monocd.yaml` for removing use_groundplane_pred:
+- Disabled ground plane prediction: PRED_GROUND_PLANE: False
+- Removed horizon heatmap loss: Commented out horizon_hm_loss from LOSS_NAMES
+- Updated loss weights: Removed corresponding weight from INIT_LOSS_WEIGHT
